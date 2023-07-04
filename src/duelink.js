@@ -205,7 +205,7 @@ class SerialInterface {
         this.DeviceConfig = new DeviceConfiguration();
         this.portName = new SerialWebUSB(2, 1);
         this.leftOver = "";
-        this.ReadTimeout = 6;
+        this.ReadTimeout = 3;
         //this.portName = portName;
         this.echo = true;
         this.isWeb =true;
