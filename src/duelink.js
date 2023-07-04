@@ -1,30 +1,21 @@
 class SerialUSB {
     constructor(serialUsb) {
         this.port = serialUsb;
-        //this.outEndpoint = outEndpoint;
-        //this.inEndpoint = inEndpoint;
     }
 
     async connect() {
         this.x = 0;
-
-        //this.port = await navigator.serial.requestPort({ filters: deviceFilters });
-        //await this.port.open({ baudRate: 9600 });
-        //this.writer = this.port.writable.getWriter();
-        //this.reader = this.port.readable.getReader();
     }
 
     async sendString(message) {
-        let encoder = new TextEncoder();
-        let bytes = encoder.encode(message);
-        let buffer = Buffer.from(bytes);
-        await this.port.write(buffer);
+        //let encoder = new TextEncoder();
+        //let bytes = encoder.encode(message);
+        //let buffer = Buffer.from(bytes);
+        //await this.port.write(buffer);
+        await this.port.write(message);
     }
 
     async readString() {
-        //let messageLengthBuffer = await this.readBytes(1);
-        //let messageLength = messageLengthBuffer[0];
-
         let messageBuffer = await this.readBytes();
         let decoder = new TextDecoder();
         return decoder.decode(messageBuffer);
@@ -33,17 +24,17 @@ class SerialUSB {
         const arrayBuffer = new ArrayBuffer(buffer.length);
         const view = new Uint8Array(arrayBuffer);
         for (let i = 0; i < buffer.length; ++i) {
-          view[i] = buffer[i];
+            view[i] = buffer[i];
         }
         return view;
-      }
+    }
     async readBytes(count) {
         let buffer = new Uint8Array(count);
         let offset = 0;
         while (count > 0) {
-            let result = await this.port.read();
+            let result = await this.port.read(count);
             if (result) {
-                let readbuf = toArrayBuffer(result);
+                let readbuf = this.toArrayBuffer(result);
                 buffer.set(readbuf, offset);
                 offset += result.length;
                 count -= result.length;
@@ -61,7 +52,7 @@ class SerialUSB {
         let offset = 0;
         let result = await this.port.read();
         if (result) {
-            buffer = toArrayBuffer(result);
+            buffer = this.toArrayBuffer(result);
             //result.value;
         }
         /*
@@ -76,11 +67,13 @@ class SerialUSB {
         return await this.readBytes(count);
     }
     async read() {
-        return this.readString(); //await this.readBytes();
+        var uint8array = await this.readBytes(); //await this.readString();
+        var string = new TextDecoder().decode(uint8array);
+        return string;
     }
     async write(bytedata) {
         //var buffer = Buffer.from( new Uint8Array(arrayBuffer) );
-        var buffer = Buffer.from( bytedata );
+        var buffer = Buffer.from(bytedata);
         await this.port.write(buffer);
     }
     close() {
@@ -151,6 +144,7 @@ class SerialWebUSB {
 
         return buffer;
     }
+
     async readBytes() {
         var buffer = new Uint8Array();
         let offset = 0;
@@ -170,7 +164,7 @@ class SerialWebUSB {
         return await this.readBytes(count);
     }
     async read() {
-        return this.readString(); //await this.readBytes();
+        return await this.readBytes();// this.readString(); 
     }
     async write(bytedata) {
         await this.writer.write(bytedata);
@@ -197,8 +191,8 @@ class SerialWebUSB {
 
 
 class SerialInterface {
-    
-    isweb= false;
+    isReady = false;
+    isWeb = false;
     static CommandCompleteText = ">";
     static DefaultBaudRate = 115200;
     version = "0.0";
@@ -206,31 +200,32 @@ class SerialInterface {
     //DeviceConfig = new DeviceConfiguration();
 
     /*
+    //for web version
     constructor() {
         this.DeviceConfig = new DeviceConfiguration();
         this.portName = new SerialWebUSB(2, 1);
         this.leftOver = "";
-        this.ReadTimeout = 3;
+        this.ReadTimeout = 6;
         //this.portName = portName;
         this.echo = true;
-        this.isweb =true;
+        this.isWeb =true;
     }*/
 
-    constructor(serialUSB) {
+    constructor(serialPort) {
+
         this.DeviceConfig = new DeviceConfiguration();
-        this.portName = new SerialUSB(serialUSB);
+        this.portName = new SerialUSB(serialPort);
         this.leftOver = "";
         this.ReadTimeout = 3;
-        //this.portName = portName;
         this.echo = true;
-        this.isweb=false;
+        this.isWeb = false;
     }
 
     async Connect() {
         try {
-            if(this.isweb)
+            if (this.isWeb)
                 await this.portName.connect([{ usbVendorId: 0x1B9F }]);
-                else
+            else
                 this.portName.connect();
 
         } catch (e) {
@@ -246,9 +241,13 @@ class SerialInterface {
         */
         this.portName.setTimeout(this.ReadTimeout);
         this.leftOver = "";
-        setTimeout(() => {
+        if (this.isWeb) {
+            setTimeout(() => {
+                this.Synchronize();
+            }, 100);
+        } else {
             this.Synchronize();
-        }, 100);
+        }
     }
 
     Disconnect() {
@@ -257,7 +256,7 @@ class SerialInterface {
         } catch { }
         this.port = null;
     }
-    
+
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -272,21 +271,24 @@ class SerialInterface {
         this.portName.setTimeout(1);
         let tryCount = 3;
         while (tryCount > 0) {
-            //setTimeout(() => {
+            //setTimeout(async() => {
             this.leftOver = "";
             this.portName.resetInputBuffer();
             this.portName.resetOutputBuffer();
             try {
-                const version = this.GetVersion();
+                const version = await this.GetVersion();
                 if (version != "" && version[2] == "." && version[4] == ".") {
+                    console.log(version);
+                    this.isReady = true;
                     break;
                 }
             } catch { }
             tryCount -= 1;
-            await sleep(10);
+            await this.sleep(10);
             //}, 10);
         }
         this.portName.setTimeout(orig);
+        
     }
 
     TurnEchoOff() {
@@ -314,7 +316,7 @@ class SerialInterface {
                 this.portName.resetInputBuffer();
                 this.portName.resetOutputBuffer();
                 version.respone = version.respone.slice(command.length);
-               
+
             }
             this.version = version.respone;
         }
@@ -341,7 +343,7 @@ class SerialInterface {
         this.portName.resetOutputBuffer();
     }
 
-   async WriteCommand(command) {
+    async WriteCommand(command) {
         this.DiscardInBuffer();
         this.DiscardOutBuffer();
         await this.__WriteLine(command);
@@ -362,40 +364,45 @@ class SerialInterface {
 
         while (new Date() < end) {
             const data = await this.portName.read(1);
-            str += data.toString();
+            if (data) {
+                str += data.toString();
 
-            str = str.replace("\n", "");
-            str = str.replace("\r", "");
-            // print(str)
-            let idx1 = str.indexOf(">");
-            let idx2 = str.indexOf("&");
-
-            if (idx1 == -1) {
-                idx1 = str.indexOf("$");
+                str = str.replace("\n", "");
+                str = str.replace("\r", "");
             }
+            if (str.length > 0) {
+                console.log(str)
+                let idx1 = str.indexOf(">");
+                let idx2 = str.indexOf("&");
 
-            if (idx1 == -1 && idx2 == -1) {
-                continue;
+                if (idx1 == -1) {
+                    idx1 = str.indexOf("$");
+                }
+
+                if (idx1 == -1 && idx2 == -1) {
+                    continue;
+                }
+
+                const idx = idx2 == -1 ? idx1 : idx2;
+
+                this.leftOver = str.slice(idx + 1);
+                respone.success = true;
+                respone.respone = str.slice(0, idx);
+                // print(respone.respone)
+                const idx3 = str.indexOf("!");
+                //if idx3 != -1 and 'error' in respone.respone:
+                //    respone.success = False
+
+                //if idx3 != -1 and 'unknown' in respone.respone:
+                //    respone.success = False
+
+                if (idx3 != -1) {
+                    respone.success = false;
+                }
+
+
+                return respone;
             }
-
-            const idx = idx2 == -1 ? idx1 : idx2;
-
-            this.leftOver = str.slice(idx + 1);
-            respone.success = true;
-            respone.respone = str.slice(0, idx);
-            // print(respone.respone)
-            const idx3 = str.indexOf("!");
-            //if idx3 != -1 and 'error' in respone.respone:
-            //    respone.success = False
-
-            //if idx3 != -1 and 'unknown' in respone.respone:
-            //    respone.success = False
-
-            if (idx3 != -1) {
-                respone.success = false;
-            }
-
-            return respone;
         }
 
         this.leftOver = "";
