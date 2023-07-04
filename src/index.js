@@ -25,7 +25,7 @@ serialport.on('open', () => {
 })
 
 listPorts.then(function (result) {
-    console.log(result) 
+    console.log(result)
 })
 
 //wait for serial com ready
@@ -36,10 +36,14 @@ while (!isReady) {
 var comPort = new SerialInterface(serialport);
 comPort.Connect();
 
+var trycount = 30;
 //wait for the firmware version 
 while (!comPort.isReady) {
-    await sleep(100)
+    await sleep(100);
+    trycount--;
+    if (trycount <= 0) throw Error("can't get the firmware version")
 }
+
 var duedemo = new DUELinkController(comPort);
 
 // add sleep function!
@@ -54,17 +58,17 @@ async function demo() {
     for (let i = 0; i < 10; i++) {
         duedemo.Digital.Write(108, true);
         //port.write('dwrite(108,1)\n')
-        console.log(`Waiting...`);
+        console.log(`turn led on...`);
 
         await sleep(200);
         duedemo.Digital.Write(108, false);
         //port.write('dwrite(108,0)\n')
-        console.log(`Waiting...`);
+        console.log(`turn led off...`);
         await sleep(200);
     }
 
     console.log('Done');
 }
-demo();
+await demo();
 
 console.log("The End!");

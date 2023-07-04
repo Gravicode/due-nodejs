@@ -288,7 +288,7 @@ class SerialInterface {
             //}, 10);
         }
         this.portName.setTimeout(orig);
-        
+
     }
 
     TurnEchoOff() {
@@ -366,10 +366,11 @@ class SerialInterface {
             const data = await this.portName.read(1);
             if (data) {
                 str += data.toString();
-
                 str = str.replace("\n", "");
                 str = str.replace("\r", "");
             }
+
+
             if (str.length > 0) {
                 console.log(str)
                 let idx1 = str.indexOf(">");
@@ -1861,11 +1862,16 @@ class DUELinkController {
         } catch {
             throw (`Could not connect to the comport`);
         }
+    }
 
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async InitDevice() {
         if (this.serialPort === null) {
             throw (`serialPort is null`);
         }
-
         this.Analog = new AnalogController(this.serialPort);
         this.Digital = new DigitalController(this.serialPort);
         this.I2c = new I2cController(this.serialPort);
@@ -1886,15 +1892,12 @@ class DUELinkController {
         this.Temperature = new TemperatureController(this.serialPort);
         this.Humidity = new HudimityController(this.serialPort);
     }
-
     async Connect(serialinterface) {
         this.serialPort = serialinterface;
-        //this.serialPort = new SerialInterface();
-        //this.serialPort.Connect();
-
+        
         this.Version = this.serialPort.version;
         this.Version = this.Version.split("\n")[0];
-
+        this.Version = this.Version.replace("\r", "");
         if (this.Version === "" || this.Version.length !== 7) {
             throw ("The device is not supported.");
         }
@@ -1920,6 +1923,7 @@ class DUELinkController {
         }
 
         this.serialPort.DeviceConfig = this.DeviceConfig;
+        await this.InitDevice();
     }
 
     Disconnect() {
