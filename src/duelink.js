@@ -1727,13 +1727,18 @@ class SystemController {
 
         return true;
     }
-
-    Wait(millisecond) {
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    async Wait(millisecond) {
         let cmd = `wait(${millisecond})`;
         this.serialPort.WriteCommand(cmd);
+        /*
         setTimeout(() => {
             this.serialPort.ReadRespone();
-        }, millisecond);
+        }, millisecond);*/
+        await this.sleep(millisecond);
+        //this.serialPort.ReadRespone();        
         return true;
     }
 }
@@ -1864,9 +1869,7 @@ class DUELinkController {
         }
     }
 
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    
 
     async InitDevice() {
         if (this.serialPort === null) {
