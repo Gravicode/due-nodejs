@@ -91,14 +91,28 @@ async function demo() {
 
 await demo();
 
+//serialport.write('LcdConfig(0, 0x3C)\n');
+//await sleep(1)
+
 await duedemo.Display.Configuration(0, 0x3C)
 for (let i = 0; i < 10; i++) {
+
+//serialport.write('lcdclear(0)\n');
+//await sleep(1)
+
+//serialport.write('LcdText("Hello-'+i+'",1,10,10)\n');
+//await sleep(1)
+
+//serialport.write('LcdShow()\n');
+//await sleep(500)
+
 await duedemo.Display.Clear(0)
 await duedemo.Display.DrawText("hello-"+i,1,10,10)
 await duedemo.Display.Show()
 //await sleep(500)
 await duedemo.System.Wait(500)
 }
+
 //close serial com
 duedemo.Disconnect()
 
