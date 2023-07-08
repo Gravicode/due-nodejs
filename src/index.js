@@ -88,8 +88,17 @@ async function demo() {
 
     console.log('Done');
 }
+
 await demo();
 
+await duedemo.Display.Configuration(0, 0x3C)
+for (let i = 0; i < 10; i++) {
+await duedemo.Display.Clear(0)
+await duedemo.Display.DrawText("hello-"+i,1,10,10)
+await duedemo.Display.Show()
+//await sleep(500)
+await duedemo.System.Wait(500)
+}
 //close serial com
 duedemo.Disconnect()
 
