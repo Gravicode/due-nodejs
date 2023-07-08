@@ -1639,10 +1639,10 @@ class SystemController {
         this.serialPort.Disconnect();
     }
 
-    GetTickMicroseconds() {
+    async GetTickMicroseconds() {
         let cmd = "print(tickus())";
         this.serialPort.WriteCommand(cmd);
-        let res = this.serialPort.ReadRespone();
+        let res = await this.serialPort.ReadRespone();
         if (res.success) {
             try {
                 return parseInt(res.respone);
@@ -1651,10 +1651,10 @@ class SystemController {
         return -1;
     }
 
-    GetTickMilliseconds() {
+    async GetTickMilliseconds() {
         let cmd = "print(tickms())";
         this.serialPort.WriteCommand(cmd);
-        let res = this.serialPort.ReadRespone();
+        let res = await this.serialPort.ReadRespone();
         if (res.success) {
             try {
                 return parseInt(res.respone);
@@ -1663,7 +1663,7 @@ class SystemController {
         return -1;
     }
 
-    Beep(pin, frequency, duration) {
+    async Beep(pin, frequency, duration) {
         if (frequency < 0 || frequency > 10000) {
             throw ("Frequency is within range[0,10000] Hz");
         }
@@ -1673,7 +1673,8 @@ class SystemController {
 
         let cmd = `beep(${pin}, ${frequency}, ${duration})`;
         this.serialPort.WriteCommand(cmd);
-        let res = this.serialPort.ReadRespone();
+        //await this.sleep(1);
+        let res = await this.serialPort.ReadRespone();
         return res.success;
     }
 
@@ -1702,45 +1703,45 @@ class SystemController {
         return;
     }
 
-    __PrnText(text, newline) {
+    async __PrnText(text, newline) {
         for (let i = 0; i < text.length; i++) {
             this.__PrnChar(text[i]);
         }
 
         let display = new DisplayController(this.serialPort);
-        display.Clear(0);
+        await display.Clear(0);
 
         for (let i = 0; i < this.displayText.length; i++) {
             if (this.displayText[i] !== "") {
-                display.DrawText(this.displayText[i], 1, 0, i * 8);
+                await display.DrawText(this.displayText[i], 1, 0, i * 8);
             }
         }
 
-        display.Show();
+        await display.Show();
 
         if (newline) {
             this.__PrnChar("\r");
         }
     }
 
-    Print(text) {
+    async Print(text) {
         console.log(text);
 
         if (typeof text === "string") {
-            this.__PrnText(text, false);
+            await this.__PrnText(text, false);
         } else {
-            this.__PrnText(text.toString(), false);
+            await this.__PrnText(text.toString(), false);
         }
 
         return true;
     }
 
-    Println(text) {
+    async Println(text) {
         console.log(text);
         if (typeof text === "string") {
-            this.__PrnText(text, true);
+           await this.__PrnText(text, true);
         } else {
-            this.__PrnText(text.toString(), true);
+           await this.__PrnText(text.toString(), true);
         }
 
         return true;

@@ -76,14 +76,15 @@ async function demo() {
         duedemo.Digital.Write(108, true);
         //port.write('dwrite(108,1)\n')
         console.log(`turn led on...`);
+
         await duedemo.System.Wait(200);
         //await sleep(200);
         duedemo.Digital.Write(108, false);
         //port.write('dwrite(108,0)\n')
         console.log(`turn led off...`);
+
         //await sleep(200);
         await duedemo.System.Wait(200);
-
     }
 
     console.log('Done');
@@ -106,10 +107,12 @@ for (let i = 0; i < 10; i++) {
 //serialport.write('LcdShow()\n');
 //await sleep(500)
 
-await duedemo.Display.Clear(0)
-await duedemo.Display.DrawText("hello-"+i,1,10,10)
-await duedemo.Display.Show()
+//await duedemo.Display.Clear(0)
+//await duedemo.Display.DrawText("hello-"+i,1,10,10)
+//await duedemo.Display.Show()
 //await sleep(500)
+await duedemo.System.Println(`no ${i}`);
+ 
 await duedemo.System.Wait(500)
 }
 
